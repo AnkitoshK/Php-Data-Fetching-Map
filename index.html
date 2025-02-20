@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Landing Page</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #map {
+            height: 500px;
+            width: 80%;
+            margin: 20px auto;
+            border: 2px solid black;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Map Landing Page</h1>
+    <p>Fetching location data from MySQL database using PHP</p>
+    
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var map = L.map("map").setView([28.6139, 77.2090], 10);  // Center on Delhi
+
+            // Add OpenStreetMap tiles
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+            // Add Delhi marker for reference
+            L.marker([28.6139, 77.2090]).addTo(map).bindPopup("Delhi").openPopup();
+
+            let markers = {};
+            let offset = 0;
+            const batchSize = 5000; //uses the 5000 group batches for loading all 1lakh+ data
+
+            function fetchMarkers() {
+                var bounds = map.getBounds();
+                var minLat = bounds.getSouth();
+                var maxLat = bounds.getNorth();
+                var minLon = bounds.getWest();
+                var maxLon = bounds.getEast();
+
+                fetch(`http://localhost/map_backend/getLocation.php?offset=${offset}&limit=${batchSize}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Received data:', data);
+
+                        if (!data.locations || data.locations.length === 0) {
+                            console.log("No more markers to load.");
+                            return;
+                        }
+
+                        let index = 0;
+                        function addMarkers() {
+                            if (index < data.locations.length) {
+                                const location = data.locations[index];
+                                var lat = parseFloat(location.latitude);
+                                var lon = parseFloat(location.longitude);
+                                var name = location.remark || "Unknown Location";
+
+                                if (!isNaN(lat) && !isNaN(lon)) {
+                                    let key = `${lat},${lon}`;
+                                    if (!markers[key]) {
+                                        let marker = L.marker([lat, lon]).bindPopup(name);
+                                        marker.addTo(map);
+                                        markers[key] = marker;
+                                    }
+                                }
+
+                                index++;
+                                requestAnimationFrame(addMarkers);
+                            } else {
+                                offset += batchSize; // Load next batch
+                                setTimeout(fetchMarkers, 500); // Fetch next batch with delay
+                            }
+                        }
+                        addMarkers();
+                    })
+                    .catch(error => {
+                        console.error("Error fetching markers:", error);
+                    });
+            }
+
+            fetchMarkers(); // Load first batch
+            map.on("moveend", fetchMarkers); // Load more markers when the map moves
+        });
+    </script>
+
+</body>
+</html>
