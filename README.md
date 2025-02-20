@@ -27,3 +27,14 @@ PHP (Backend)
 MySQL (Database)
 JavaScript (Fetch API/Axios)
 
+To clone this repository, use the following command:
+git clone https://github.com/AnkitoshK/Php-Data-Fetching-Map.git
+
+After cloning, navigate into the project directory:
+cd Php-Data-Fetching-Map
+
+Then, start your local PHP server (if using the built-in PHP server):
+http://localhost/Php-Data-Fetching-Map/
+
+
+This will ensure users can easily clone and set up your project. Let me know if you need modifications! 🚀
